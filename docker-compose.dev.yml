@@ -1,0 +1,61 @@
+# Local infrastructure: Postgres, Neo4j, Redis.
+# Values match apps/api/.env.example so the API can connect with the defaults.
+#
+#   docker compose -f docker-compose.infra.yml up -d      (or: pnpm infra:up)
+#
+# This creates the shared `nom` network that docker-compose.apps.yml joins.
+name: nom-infra
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nom
+      POSTGRES_PASSWORD: nom
+      POSTGRES_DB: nom
+    ports: ['15432:5432']
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nom -d nom']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5-community
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/nompassword
+      NEO4J_PLUGINS: '["apoc"]'
+    ports: ['7474:7474', '7687:7687']
+    volumes: [neo4jdata:/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:7474 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports: ['16379:6379']
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  neo4jdata:
+  redisdata:
+
+# Name the default network `nom` so the apps compose can attach to it as external.
+networks:
+  default:
+    name: nom

@@ -1,0 +1,26 @@
+{
+  "globalSetup": "../src/testing/global-setup.cjs",
+  "moduleFileExtensions": ["js", "json", "ts", "mjs"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "testTimeout": 30000,
+  "extensionsToTreatAsEsm": [".ts"],
+  "transform": {
+    "^.+\\.(t|j|mj)s$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": {
+          "module": "ESNext",
+          "moduleResolution": "Bundler"
+        }
+      }
+    ]
+  },
+  "maxWorkers": 1,
+  "transformIgnorePatterns": ["/node_modules/(?!.*\\.mjs)"],
+  "moduleNameMapper": {
+    "^(\\.{1,2}/.*)\\.js$": "$1"
+  }
+}

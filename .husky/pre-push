@@ -1,0 +1,36 @@
+# Block direct pushes to protected branches. Git feeds pre-push one line per
+# ref on stdin: "<local ref> <local sha> <remote ref> <remote sha>".
+while read -r local_ref local_sha remote_ref remote_sha; do
+  branch="${remote_ref#refs/heads/}"
+  case "$branch" in
+    main | dev | stg)
+      echo "✗ Direct push to '$branch' is blocked — open a pull request instead."
+      exit 1
+      ;;
+  esac
+done
+
+echo "🎨 Formatting before push (pnpm format)..."
+pnpm format
+
+# Block the push if formatting changed any tracked files, so unformatted
+# code can't slip through. Commit the changes and push again.
+if ! git diff --quiet; then
+  echo ""
+  echo "✗ Formatting modified these files — commit them, then push again:"
+  git --no-pager diff --name-only
+  exit 1
+fi
+
+echo "✓ Code is formatted."
+
+FILTER_ARG="${PUSH_FILTER:+--filter=$PUSH_FILTER}"
+
+echo "🔎 Linting..."
+pnpm turbo lint $FILTER_ARG
+
+echo "🔨 Building..."
+pnpm turbo build $FILTER_ARG
+
+echo "🧪 Running tests..."
+pnpm turbo test --continue $FILTER_ARG

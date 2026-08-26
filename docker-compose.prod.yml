@@ -1,0 +1,63 @@
+# Production stack for the shared EC2 box.
+# Runs the API (image pulled from GHCR) + Neo4j + Redis. Postgres is reused from
+# the host via host.docker.internal.
+#
+#   docker compose -f docker-compose.prod.yml pull && up -d
+#
+# `.env` lives next to this file on the box (see .env.prod.example).
+name: nom-prod
+
+services:
+  api:
+    image: ${API_IMAGE:-ghcr.io/vynspire-ai-labs/nom-api:latest}
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - '5000:5000' # app reads PORT=5000 from .env (main.ts: PORT ?? 8000)
+    # Reach the host's existing Postgres from inside the container.
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  neo4j:
+    image: neo4j:5-community
+    restart: unless-stopped
+    environment:
+      # NEO4J_PASSWORD comes from .env (compose auto-loads .env for interpolation).
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+      NEO4J_PLUGINS: '["apoc"]'
+    # localhost-only — reachable via SSH tunnel for the Neo4j Browser UI, not public.
+    # The API talks to it over the internal compose network as neo4j:7687.
+    #   ssh -L 7474:localhost:7474 -L 7687:localhost:7687 <user>@<ec2-host>
+    #   then open http://localhost:7474 (connect URL: bolt://localhost:7687)
+    ports:
+      - '127.0.0.1:7474:7474' # Neo4j Browser (web UI)
+      - '127.0.0.1:7687:7687' # bolt (the browser connects here client-side)
+    volumes:
+      - neo4jdata:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:7474 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    # No host port — only the API talks to it over the internal network as redis:6379.
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  neo4jdata:
+  redisdata:

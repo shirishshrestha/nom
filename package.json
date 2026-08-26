@@ -1,0 +1,37 @@
+{
+  "name": "nom",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "check-env": "ts-node --project scripts/tsconfig.json scripts/check-env.ts",
+    "reset-db": "ts-node --project scripts/tsconfig.json scripts/reset-db.ts",
+    "infra:up": "docker compose -f docker-compose.dev.yml up -d",
+    "infra:down": "docker compose -f docker-compose.dev.yml down",
+    "dev": "turbo dev",
+    "be:dev": "pnpm dev --filter \"!web\"",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "prepare": "husky",
+    "db:generate": "pnpm --filter @nom/database migration:generate",
+    "db:migrate": "pnpm --filter @nom/database migration:run",
+    "db:revert": "pnpm --filter @nom/database migration:revert"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@types/pg": "^8.20.0",
+    "husky": "^9.1.7",
+    "pg": "^8.21.0",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "ts-node": "^10.9.2",
+    "turbo": "^2.9.15",
+    "typescript": "~6"
+  },
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": ">=20"
+  }
+}

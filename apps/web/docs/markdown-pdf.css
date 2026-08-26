@@ -1,0 +1,34 @@
+pre,
+code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+table {
+  page-break-inside: avoid;
+}
+
+h1,
+h2,
+h3 {
+  page-break-after: avoid;
+}
+
+/* inline `code` spans — bluish, higher contrast than the default tan/brown */
+:not(pre) > code {
+  color: #1d4ed8 !important;
+  background-color: rgba(37, 99, 235, 0.1) !important;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+
+/* fenced code blocks — blue-tinted surface + border for print contrast */
+pre {
+  background-color: #eff6ff !important;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+}
+
+pre code {
+  color: #1e3a8a !important;
+}
